@@ -1,7 +1,7 @@
 <?php
 /*
  * Plugin Name:       Events Listing Plugin
- * Description:       Project to create an events listing plugin.
+ * Description:       Project create an events listing plugin.
  * Version:           1
  * Requires at least: 5.2
  * Requires PHP:      7.2
@@ -19,7 +19,13 @@ class EventsListing {
         //create custom post type
         add_action('init', array($this, 'custom_post_type'));
 
-        add_action('admin_init', 'add_post_meta_boxes');
+        add_action('add_meta_boxes', array($this, 'add_post_meta_boxes'));
+
+        add_action('save_post', array($this, 'save_post_meta_boxes'));
+
+        // add_action('add_meta_boxes', array($this, 'custom_meta_box'));
+        // add_action('save_post', 'save_custom_meta_box');
+        
 
         //add assets (js,css,etc)
         add_action('wp_enqueue_scripts ', array($this, 'load_assets'));
@@ -35,38 +41,55 @@ class EventsListing {
         $args = array(
             'public' => true,
             'has_archive' => true,
-            'supports' => array('title', 'editor', 'thumbnail', 'custom-fields', 'revisions'), 
-            'exclude_from_search' => true,
+            'supports' => array('title', 'editor', 'thumbnail', 'custom-fields', 'revisions', 'revisions'), 
             'publicaly_queryable' => true,
             'show_ui' => true,
             'show_in_menu' => true,
             'show_in_rest' => true,
+            'can_export' => true,
             'capability' => 'manage_options',
             'labels' => array(
-                'name' => 'Events',
-                'singular' => 'Contact Form Entry',
+                'name' => 'Event',
+                'singular' => 'Event',
                 'item_published' => 'event published'
             ),
             'menu_icon' => 'dashicons-calendar'
         );
 
-        register_post_type(' ', $args);
+        register_post_type('events_listing', $args);
     }
 
-    function add_post_meta_boxes(){
+    public function add_post_meta_boxes(){
 
         add_meta_box(
             'post_metadata_events_post', 
-            'Event_Date', 
-            'post_meta_box_events_post',
+            'Event Date', 
+            array($this, 'post_meta_box_events_post'),
             'events_listing',
-            'side', 
-            'low'
-        );
+            'normal', 
+            'high'
+        );  
 
     }
+
+    function post_meta_box_events_post($post){
+
+        $custom = get_post_custom( $post -> ID); 
+        $fieldData = $custom["_event_date"][0];
+        echo "<input type=\"date\" name=\"_event_date\" value=\"".$fieldData."\" placeholder=\"Event Date\">";
+    }
     
-       
+
+    //save field value
+    function save_post_meta_boxes($post_id){
+
+        global $post;
+        if( defined('DOING_AUTOSAVE') && DOING_AUTOSAVE ){
+            return;
+        }  
+        update_post_meta($post_id->ID, "_event_date", sanitize_text_field($_POST["_event_date"]));
+
+    }
     
 
     // public function load_assets()
